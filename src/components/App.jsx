@@ -1,87 +1,76 @@
-import { Component } from "react"
-import ContactForm from "./ContactForm/ContactForm"
-import { Section } from "./Section/Section"
-import ContactList from "./ContactList/ContactList"
-import Filter from "./Filter/Filter"
-import toast, { Toaster } from 'react-hot-toast'
 
+import React, { useEffect, useState } from "react";
+import ContactForm from "./ContactForm/ContactForm";
+import { Section } from "./Section/Section";
+import ContactList from "./ContactList/ContactList";
+import Filter from "./Filter/Filter";
+import toast, { Toaster } from 'react-hot-toast';
 
+const App = () => {
+  const [contacts, setContacts] = useState(null);
+  const [filter, setFilter] = useState('');
 
-class App extends Component {
-  state = {
-    contacts: null,
-    filter: '',
-  }
+  useEffect(() => {
+    const savedList = localStorage.getItem('contacts');
+    if (savedList) {
+      setContacts(JSON.parse(savedList));
+    }
+  }, []);
 
-  componentDidMount = () => {
-    const savedList = localStorage.getItem('contacts')
-    if (savedList)
-      this.setState({
-        contacts: JSON.parse(savedList)
-      })
-  }
+  useEffect(() => {
+    if (contacts) {
+      localStorage.setItem('contacts', JSON.stringify(contacts));
+      if (contacts.length > 0) {
+        toast.success('Contact operation successful!');
+      }
+    }
+  }, [contacts]);
 
+  const createContact = (contact) => {
+    setContacts((prevContacts) => {
+      if (prevContacts === null) {
+        return [contact];
+      } else {
+        return [...prevContacts, contact];
+      }
+    });
+  };
 
-  componentDidUpdate = (prevProps, prevState) => {
-    if (prevState.contacts !== this.state.contacts)
-      localStorage.setItem('contacts', JSON.stringify(this.state.contacts))
-    
-    if (prevState.contacts && prevState.contacts.length < this.state.contacts.length)
-      toast.success('Create contact successfully!')
-        
-    if (prevState.contacts && prevState.contacts.length > this.state.contacts.length)
-      toast.error('Delete contact successfully!')
-  }
-  
+  const handleChangeFilter = (e) => {
+    setFilter(e.target.value);
+  };
 
-  createContact = (contact) => {
-    this.setState(prevState => ({
-      contacts: [...prevState.contacts, contact]
-    }));
-  }
+  const filteredContacts = contacts
+    ? contacts.filter((contact) =>
+        contact.name.toLowerCase().includes(filter.toLowerCase())
+      )
+    : [];
 
-  getListOfContacts = () => {
-    const { contacts, filter } = this.state;
-    if (!contacts) return [];
-    const filterValue = filter.toLowerCase()
-    return contacts && contacts.filter((contact) =>
-      contact.name.toLowerCase().includes(filterValue)
-    )
-  }
+  const deleteContact = (contactForDelete) => {
+    setContacts((prevContacts) =>
+      prevContacts.filter((contact) => contact.id !== contactForDelete)
+    );
+  };
 
-  handleChangeFilter = ({ target: { value } }) => {
-    this.setState({
-      filter: value,
-    })
-  }
+  return (
+    <>
+      <Section title='Phonebook'>
+        <ContactForm createContact={createContact} contacts={contacts} />
+      </Section>
+      
+      <Section title='Contacts'>
+        <Filter
+          title='Find contacts by name'
+          handleChangeFilter={handleChangeFilter}
+          value={filter}
+        />
+        {filteredContacts.length > 0 && (
+          <ContactList contacts={filteredContacts} deleteContact={deleteContact} />
+        )}
+      </Section>
+      <Toaster />
+    </>
+  );
+};
 
-
-  deleteContact = (contactForDelete) => {
-    this.setState(prevState =>
-      ({ contacts:prevState.contacts.filter(contact => contact.id !== contactForDelete) })
-    )
-  }
-
-  render() {
-    const { filter, contacts } = this.state
-    const listOfContacts = this.getListOfContacts();
-    const isContactListEmpty = listOfContacts && listOfContacts.length === 0;
-   
-    return (
-      <>
-        <Section title='Phonebook'>
-          <ContactForm createContact={this.createContact} contacts={contacts} />
-        </Section>
-        
-        <Section title='Contacts'>
-          <Filter title='Find contacts by name' handleChangeFilter={this.handleChangeFilter} value={filter} />
-          {!isContactListEmpty && <ContactList contacts={this.getListOfContacts()} deleteContact={this.deleteContact} />}
-        </Section>
-        <Toaster />
-      </>
-    )
-    
-  }
-
-}
-export default App
+export default App;

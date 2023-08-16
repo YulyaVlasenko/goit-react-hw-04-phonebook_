@@ -21,7 +21,7 @@ class ContactForm extends Component {
         e.preventDefault()
         const { name, number } = this.state
         const { createContact, contacts } = this.props
-        const isExisting = contacts.find(contact => contact.name === name) 
+        const isExisting = contacts && contacts.find(contact => contact.name === name) 
         if (isExisting) {
             toast.error(`${name} is already in contacts.`)
            
